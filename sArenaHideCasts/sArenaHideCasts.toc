@@ -1,0 +1,8 @@
+## Title: sArenaHideCasts
+## Interface: 120005
+## Notes: Hides non-player casts for sArena
+## IconTexture: 6624474
+## Version: 1.0.0
+## Category-enUS: !!Important
+
+sArenaHideCasts.lua
