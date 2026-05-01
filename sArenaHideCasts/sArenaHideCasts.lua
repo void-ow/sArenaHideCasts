@@ -12,6 +12,7 @@ local function hideUnimportantCasts(self, castBar, event)
 			castBar.Text:SetScale(2)
 			local currentSpellTarget = UnitSpellTargetName(unitToken)
 			if currentSpellTarget == nil then
+				castBar:SetScale(0.5)
 				targetsPlayer = true
 			end
 		end
