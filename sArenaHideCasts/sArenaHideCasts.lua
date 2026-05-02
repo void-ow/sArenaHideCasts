@@ -9,11 +9,13 @@ local function hideUnimportantCasts(self, castBar, event)
 	if PlayerIsSpellTarget and unitToken then
 		if (castBar.casting or castBar.channeling) and castBar.spellID ~= nil then
 			targetsPlayer = PlayerIsSpellTarget(unitToken)
-			castBar.Text:SetScale(2)
+			castBar.Text:SetScale(1.75)
 			local currentSpellTarget = UnitSpellTargetName(unitToken)
 			if currentSpellTarget == nil then
-				castBar:SetScale(0.5)
-				targetsPlayer = true
+				local class = UnitClassBase(unitToken)
+				if (class and (class == "MAGE" or class == "WARLOCK")) then
+					targetsPlayer = true
+				end
 			end
 		end
 	end
