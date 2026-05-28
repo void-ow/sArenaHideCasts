@@ -1,58 +1,124 @@
--- NOTES:
--- We can check for CC, but this is a secret data since spellId is secret data, which, i guess, is fair
--- local isCCSpell = C_Spell.IsSpellCrowdControl(spellId)
+local sahFrame = CreateFrame("Frame")
 
-local sah_Frame = CreateFrame("Frame")
-
-local function isTargetingPlayer(unitToken)
-
-	local currentSpellTarget = UnitSpellTargetName(unitToken)
+-- Check for "whitelisted" AOE spellclasses - MAGE and WARLOCK to catch Ring of Frost, Frost Wall and Shadowfury 
+local function isWhiteListedAOE(unitToken)
 	
-	-- If the target is nil, its an AOE spell - and we show AOE spells for MAGE and WARLOCK to cover Ring of Frost, Frost Wall and Shadowfury
-	-- We ignore every AOE spell from other classes (for some reason, evoker spells are fucked though)
+	local currentSpellTarget = UnitSpellTargetName(unitToken)
+	-- If the target is nil, its an AOE spelL
+	-- We ignore every AOE spell from other classes
 	if currentSpellTarget == nil then
 		local class = UnitClassBase(unitToken)
-		-- Since currentSpellTarget is only nil for AOE spells, we then know that if its MAGE or WARLOCK its the useful aoe spells
+		-- Since currentSpellTarget is only nil for AOE spells, we then know that if its MAGE or WARLOCK then it's the useful aoe spells
 		if (class and (class == "MAGE" or class == "WARLOCK")) then
 			return true
 		end
-		return false
 	end
-	
+		
 	-- If it's not nil, its an actual spell with target
-	
-	-- Lastly, check if it's actually targeting the player (secret data)
-	return PlayerIsSpellTarget(unitToken)
-
+	return false
 end
 
-local function hideUnimportantCasts(self, castBar, event)
+-- Function that returns two (possible) secret booleans - if the spell being cast is targeting player and if that spell is a CC spell
+local function isCastedSpellTargetingPlayerAndOrCC(castBar, hideNonCCSpells)
+	
 	local unitToken = castBar.unit
 	
-	local targetsPlayer = false
-	
-	if PlayerIsSpellTarget and unitToken then
-		if (castBar.casting or castBar.channeling) and castBar.spellID ~= nil then
-			targetsPlayer = isTargetingPlayer(unitToken)
-		end
+	if unitToken == nil then
+		return false, false
 	end
 	
+	if castBar.spellID == nil then
+		return false, false
+	end
+	
+	if not castBar.casting and not castBar.channeling then
+		return false, false
+	end
+	
+	if isWhiteListedAOE(unitToken) then
+		return true, true
+	end
+	
+	local targetsPlayer = PlayerIsSpellTarget(unitToken)
+	
+	-- Only do the C_Spell call if its actually necessary to save resources
+	if hideNonCCSpells then
+		return targetsPlayer, C_Spell.IsSpellCrowdControl(castBar.spellID)
+	end
+	
+	-- If we don't need to calculate the CC spell boolean due to config, just returns false
+	return targetsPlayer, false
+end
+
+-- Main hooked function that handles the castbar hiding, triggered after the sArena function of the same name
+local function hideUnimportantCasts(self, castBar, event)
+	
+	local hideNonCC = sahConfig.hideNonCCSpells
+	
+	local targetsPlayer, isCCSpell = isCastedSpellTargetingPlayerAndOrCC(castBar, hideNonCC)
+	
+	-- Only handle hiderFrame if hideNonCC option is enabled
+	if hideNonCC and castBar.hiderFrame then
+		castBar.hiderFrame:SetAlphaFromBoolean(isCCSpell, 1, 0)
+	end
+	-- Hide castBar based on targetsPlayer secret boolean
 	castBar:SetAlphaFromBoolean(targetsPlayer, 1, 0)
 	-- Making castbar text a little bit bigger
 	castBar.Text:SetScale(1.75)
-	
 end
 
-local function eventHandler()
+-- Setting up an intermediate "hider" frame for sArena castbar to handle logic through the SetIgnoreParentAlpha(false)
+local function handleHiderSetupForSArenaFrame(mainFrame)
+	
+	local castBar = mainFrame.CastBar
+	local parentFrame = castBar:GetParent()
+	
+	local castbarHider = CreateFrame("Frame", parentFrame)
+	castbarHider:SetAllPoints(parentFrame, true)
+	castbarHider.CastbarOnEvent = parentFrame.CastbarOnEvent
+	castbarHider.UpdateCastbarTargetOnEvent = parentFrame.UpdateCastbarTargetOnEvent
+	
+	castBar.hiderFrame = castbarHider
+	
+	local point, relativeTo, relativePoint, offsetX, offsetY = castBar:GetPoint(1)
+	
+	castBar:ClearAllPoints()
+	castBar:SetParent(castbarHider)
+	castBar:SetPoint(point, castbarHider, relativePoint, offsetX, offsetY)
+	
+	castBar:SetIgnoreParentAlpha(false)
+	
+	castbarHider:SetAlpha(1)
+	castBar:SetAlpha(1)
+end
+
+-- General initialization function, called once on login
+local function initialize()
+
+	-- First initialization of config values from SavedVariables, putting defaults
+	if sahConfig == nil then
+		sahConfig = {}
+		sahConfig.hideNonCCSpells = false
+	end
+
+	-- If we need to hide the non-CC spells, setup the hider frames for every sArena frame
+	if (sahConfig.hideNonCCSpells) then
+		handleHiderSetupForSArenaFrame(sArenaEnemyFrame1)
+		handleHiderSetupForSArenaFrame(sArenaEnemyFrame2)
+		handleHiderSetupForSArenaFrame(sArenaEnemyFrame3)
+	end
+	
+	-- And hook to the sArena function
 	hooksecurefunc(sArena, "CastbarOnEvent", hideUnimportantCasts)
 end
 
-sah_Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-sah_Frame:HookScript("OnEvent", function(self)
-	C_Timer.After(2, eventHandler);
+sahFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+sahFrame:HookScript("OnEvent", function(self)
+	
+	C_Timer.After(2, initialize);
 	
 	-- Do the hooking only once, since PLAYER_ENTERING_WORLD gets called on every location change and hooksecurefunc would just add more hooks over and over
-	sah_Frame:UnregisterAllEvents();
-	sah_Frame:Hide();
-	sah_Frame:SetScript("OnEvent", nil);
+	sahFrame:UnregisterAllEvents();
+	sahFrame:Hide();
+	sahFrame:SetScript("OnEvent", nil);
 end)
