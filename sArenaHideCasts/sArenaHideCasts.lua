@@ -1,6 +1,12 @@
 local sahFrame = CreateFrame("Frame")
 
--- Check for "whitelisted" AOE spellclasses - MAGE and WARLOCK to catch Ring of Frost, Frost Wall and Shadowfury 
+local whitelistedAOEClasses = {
+	["MAGE"] = true,
+	["WARLOCK"] = true,
+	["PALADIN"] = true,
+}
+
+-- Check for "whitelisted" AOE spellclasses - MAGE, WARLOCK and PALADIN to catch Ring of Frost, Frost Wall, Shadowfury and Searing Glare
 local function isWhiteListedAOE(unitToken)
 	
 	local currentSpellTarget = UnitSpellTargetName(unitToken)
@@ -8,8 +14,12 @@ local function isWhiteListedAOE(unitToken)
 	-- We ignore every AOE spell from other classes
 	if currentSpellTarget == nil then
 		local class = UnitClassBase(unitToken)
-		-- Since currentSpellTarget is only nil for AOE spells, we then know that if its MAGE or WARLOCK then it's the useful aoe spells
-		if (class and (class == "MAGE" or class == "WARLOCK")) then
+		-- Since currentSpellTarget is only nil for AOE spells, we then know that if its whitelisted classes then it's the useful aoe spells
+		if class == nil then
+			return false
+		end
+		
+		if (class and whitelistedAOEClasses[class]) then
 			return true
 		end
 	end
