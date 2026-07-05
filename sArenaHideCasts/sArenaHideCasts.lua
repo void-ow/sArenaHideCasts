@@ -53,6 +53,13 @@ local function isCastedSpellTargetingPlayerAndOrCC(castBar, hideNonCCSpells)
 	
 	-- Only do the C_Spell call if its actually necessary to save resources
 	if hideNonCCSpells then
+		local class = UnitClassBase(unitToken)
+		
+		-- Need to do this until blizzard fixes https://github.com/Stanzilla/WoWUIBugs/issues/851
+		if class == "WARLOCK" then
+			return targetsPlayer, true
+		end
+		
 		return targetsPlayer, C_Spell.IsSpellCrowdControl(castBar.spellID)
 	end
 	

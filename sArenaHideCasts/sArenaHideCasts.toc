@@ -2,7 +2,7 @@
 ## Interface: 120007
 ## Notes: Hides non-player casts for sArena
 ## IconTexture: 6624474
-## Version: 1.3.0
+## Version: 1.4.0
 ## Category-enUS: !!Important
 ## Dependencies: sArena_Reloaded
 ## SavedVariables: sahConfig
