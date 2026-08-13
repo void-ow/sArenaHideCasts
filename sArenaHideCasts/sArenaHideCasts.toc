@@ -1,8 +1,8 @@
 ## Title: sArenaHideCasts
-## Interface: 120007
+## Interface: 120100
 ## Notes: Hides non-player casts for sArena
 ## IconTexture: 6624474
-## Version: 1.4.0
+## Version: 1.5.0
 ## Category-enUS: !!Important
 ## Dependencies: sArena_Reloaded
 ## SavedVariables: sahConfig

@@ -1,3 +1,5 @@
+-- TODO: Class logic no longer works. Holding out hope to find some workaround, but its probably not going to happen. Will remove later
+
 local sahFrame = CreateFrame("Frame")
 
 local whitelistedAOEClasses = {
@@ -13,13 +15,14 @@ local function isWhiteListedAOE(unitToken)
 	-- If the target is nil, its an AOE spelL
 	-- We ignore every AOE spell from other classes
 	if currentSpellTarget == nil then
+		
 		local class = UnitClassBase(unitToken)
 		-- Since currentSpellTarget is only nil for AOE spells, we then know that if its whitelisted classes then it's the useful aoe spells
 		if class == nil then
 			return false
 		end
 		
-		if (class and whitelistedAOEClasses[class]) then
+		if (class and not issecretvalue(class) and whitelistedAOEClasses[class]) then
 			return true
 		end
 	end
@@ -56,7 +59,7 @@ local function isCastedSpellTargetingPlayerAndOrCC(castBar, hideNonCCSpells)
 		local class = UnitClassBase(unitToken)
 		
 		-- Need to do this until blizzard fixes https://github.com/Stanzilla/WoWUIBugs/issues/851
-		if class == "WARLOCK" then
+		if (not issecretvalue(class) and class == "WARLOCK") then
 			return targetsPlayer, true
 		end
 		
