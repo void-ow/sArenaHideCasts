@@ -1,28 +1,45 @@
--- TODO: Class logic no longer works. Holding out hope to find some workaround, but its probably not going to happen. Will remove later
+-- TODO: Can probably optimize the spec logic detection by just taking it from sArena cache instead of always querying it on the fly
 
 local sahFrame = CreateFrame("Frame")
 
-local whitelistedAOEClasses = {
-	["MAGE"] = true,
-	["WARLOCK"] = true,
-	["PALADIN"] = true,
+local whitelistedAOESpecs = {
+	[62] = true, 	-- Arcane
+	[63] = true, 	-- Fire
+	[64] = true, 	-- Frost
+	[265] = true, 	-- Affliction
+	[266] = true, 	-- Demonology
+	[267] = true,	-- Destruction
+	[65] = true, 	-- Holy Paladin
+	[70] = true, 	-- Retribution
 }
 
--- Check for "whitelisted" AOE spellclasses - MAGE, WARLOCK and PALADIN to catch Ring of Frost, Frost Wall, Shadowfury and Searing Glare
+-- Need to do this until blizzard fixes https://github.com/Stanzilla/WoWUIBugs/issues/851
+local warlockSpecs = {
+	[265] = true, 	-- Affliction
+	[266] = true, 	-- Demonology
+	[267] = true,	-- Destruction
+}
+
+local function getSpecForUnitToken(unitToken)
+	local unitId = string.sub(unitToken, -1, -1)
+	return GetArenaOpponentSpec(unitId)
+end
+
+-- Check for "whitelisted" AOE spell specs - MAGE, WARLOCK and PALADIN to catch Ring of Frost, Frost Wall, Shadowfury and Searing Glare
 local function isWhiteListedAOE(unitToken)
 	
 	local currentSpellTarget = UnitSpellTargetName(unitToken)
-	-- If the target is nil, its an AOE spelL
-	-- We ignore every AOE spell from other classes
+	
+	-- If the target is nil, its an AOE spell
 	if currentSpellTarget == nil then
 		
-		local class = UnitClassBase(unitToken)
-		-- Since currentSpellTarget is only nil for AOE spells, we then know that if its whitelisted classes then it's the useful aoe spells
-		if class == nil then
+		local specId = getSpecForUnitToken(unitToken)
+		if specId == nil then
 			return false
 		end
 		
-		if (class and not issecretvalue(class) and whitelistedAOEClasses[class]) then
+		-- We ignore every AOE spell from non-whitelisted specs
+		if (whitelistedAOESpecs[specId]) then
 			return true
 		end
 	end
@@ -54,12 +71,12 @@ local function isCastedSpellTargetingPlayerAndOrCC(castBar, hideNonCCSpells)
 	
 	local targetsPlayer = PlayerIsSpellTarget(unitToken)
 	
-	-- Only do the C_Spell call if its actually necessary to save resources
+	-- Only do the spec call if its actually necessary to save resources
 	if hideNonCCSpells then
-		local class = UnitClassBase(unitToken)
+		local specId = getSpecForUnitToken(unitToken)
 		
 		-- Need to do this until blizzard fixes https://github.com/Stanzilla/WoWUIBugs/issues/851
-		if (not issecretvalue(class) and class == "WARLOCK") then
+		if (warlockSpecs[specId]) then
 			return targetsPlayer, true
 		end
 		
@@ -72,7 +89,7 @@ end
 
 -- Main hooked function that handles the castbar hiding, triggered after the sArena function of the same name
 local function hideUnimportantCasts(self, castBar, event)
-	
+
 	local hideNonCC = sahConfig.hideNonCCSpells
 	
 	local targetsPlayer, isCCSpell = isCastedSpellTargetingPlayerAndOrCC(castBar, hideNonCC)
