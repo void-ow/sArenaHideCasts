@@ -1,24 +1,4 @@
--- TODO: Can probably optimize the spec logic detection by just taking it from sArena cache instead of always querying it on the fly
-
 local sahFrame = CreateFrame("Frame")
-
-local whitelistedAOESpecs = {
-	[62] = true, 	-- Arcane
-	[63] = true, 	-- Fire
-	[64] = true, 	-- Frost
-	[265] = true, 	-- Affliction
-	[266] = true, 	-- Demonology
-	[267] = true,	-- Destruction
-	[65] = true, 	-- Holy Paladin
-	[70] = true, 	-- Retribution
-}
-
--- Need to do this until blizzard fixes https://github.com/Stanzilla/WoWUIBugs/issues/851
-local warlockSpecs = {
-	[265] = true, 	-- Affliction
-	[266] = true, 	-- Demonology
-	[267] = true,	-- Destruction
-}
 
 local function getSpecForUnitToken(unitToken)
 	local unitId = string.sub(unitToken, -1, -1)
@@ -26,22 +6,15 @@ local function getSpecForUnitToken(unitToken)
 end
 
 -- Check for "whitelisted" AOE spell specs - MAGE, WARLOCK and PALADIN to catch Ring of Frost, Frost Wall, Shadowfury and Searing Glare
+-- Not possible as of 12.1.5
 local function isWhiteListedAOE(unitToken)
 	
 	local currentSpellTarget = UnitSpellTargetName(unitToken)
 	
 	-- If the target is nil, its an AOE spell
+	-- Can't do filtering for class as of 12.1.5 yet again, maybe something new in the future?
 	if currentSpellTarget == nil then
-		
-		local specId = getSpecForUnitToken(unitToken)
-		if specId == nil then
-			return false
-		end
-		
-		-- We ignore every AOE spell from non-whitelisted specs
-		if (whitelistedAOESpecs[specId]) then
-			return true
-		end
+		return false
 	end
 		
 	-- If it's not nil, its an actual spell with target
@@ -73,13 +46,6 @@ local function isCastedSpellTargetingPlayerAndOrCC(castBar, hideNonCCSpells)
 	
 	-- Only do the spec call if its actually necessary to save resources
 	if hideNonCCSpells then
-		local specId = getSpecForUnitToken(unitToken)
-		
-		-- Need to do this until blizzard fixes https://github.com/Stanzilla/WoWUIBugs/issues/851
-		if (warlockSpecs[specId]) then
-			return targetsPlayer, true
-		end
-		
 		return targetsPlayer, C_Spell.IsSpellCrowdControl(castBar.spellID)
 	end
 	
