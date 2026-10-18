@@ -1,6 +1,6 @@
 ## Title: sArenaHideCasts
 ## Interface: 120105, 120100
-## Notes: Hides non-player casts for sArena
+## Notes: Hides casts that are not targeting you in sArena
 ## IconTexture: 6624474
 ## Version: 1.6.0
 ## Category-enUS: !!Important
